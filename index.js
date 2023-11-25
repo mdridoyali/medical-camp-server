@@ -50,7 +50,7 @@ async function run() {
       res.send(result)
     })
 
-   
+
 
     // camp related api
     app.post('/add-a-camp', async (req, res) => {
@@ -64,34 +64,40 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/camp/:id',  async (req, res) => {
+    app.get('/camp/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await campCollection.findOne(query)
       res.send(result)
     })
 
-    app.delete('/camp/:id',  async (req, res) => {
+    app.delete('/camp/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await campCollection.deleteOne(query)
       res.send(result)
     })
 
-    app.patch('/menu/:id', async (req, res) => {
+    app.put('/camp/:id', async (req, res) => {
       const id = req.params.id
-      const item = req.body
+      const camp = req.body
+      console.log(id, camp)
       const query = { _id: new ObjectId(id) }
+      const options = { upsert: true };
       const updatedDoc = {
         $set: {
-          name: item.name,
-          price: item.price,
-          category: item.category,
-          recipe: item.recipe,
-          image: item.image
+          campName: camp.campName,
+          campFees: camp.campFees,
+          location: camp.location,
+          specializedService: camp.specializedService,
+          healthProfessional: camp.healthProfessional,
+          audience: camp.audience,
+          image: camp.image,
+          scheduleDate: camp.scheduleDate,
+          description: camp.description,
         }
       }
-      const result = await campCollection.updateOne(query, updatedDoc)
+      const result = await campCollection.updateOne(query, updatedDoc, options)
       res.send(result)
     })
 
