@@ -40,7 +40,6 @@ async function run() {
     // user related api
     app.post('/users', async (req, res) => {
       const user = req.body
-      console.log(user)
       const query = { email: user?.email }
       const existingUser = await usersCollection.findOne(query)
       if (existingUser) {
@@ -49,7 +48,14 @@ async function run() {
       const result = await usersCollection.insertOne(user)
       res.send(result)
     })
-
+     
+    // check user roll
+    app.get('/user/:email', async (req, res) => {
+      const email = req.params.email
+      const query = { email: email }
+      const result = await usersCollection.findOne(query);
+      res.send(result)
+    })
 
 
     // camp related api
