@@ -34,9 +34,25 @@ async function run() {
     );
 
     const campCollection = client.db("mediCampDB").collection("camps");
+    const usersCollection = client.db("mediCampDB").collection("users");
 
 
+    // user related api
+    app.post('/users', async (req, res) => {
+      const user = req.body
+      console.log(user)
+      const query = { email: user?.email }
+      const existingUser = await usersCollection.findOne(query)
+      if (existingUser) {
+        return res.send({ message: 'user already exists', insertedId: null })
+      }
+      const result = await usersCollection.insertOne(user)
+      res.send(result)
+    })
 
+   
+
+    // camp related api
     app.post('/add-a-camp', async (req, res) => {
       const camp = req.body
       const result = await campCollection.insertOne(camp);
@@ -45,6 +61,37 @@ async function run() {
 
     app.get('/all-camps', async (req, res) => {
       const result = await campCollection.find().toArray();
+      res.send(result)
+    })
+
+    app.get('/camp/:id',  async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await campCollection.findOne(query)
+      res.send(result)
+    })
+
+    app.delete('/camp/:id',  async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await campCollection.deleteOne(query)
+      res.send(result)
+    })
+
+    app.patch('/menu/:id', async (req, res) => {
+      const id = req.params.id
+      const item = req.body
+      const query = { _id: new ObjectId(id) }
+      const updatedDoc = {
+        $set: {
+          name: item.name,
+          price: item.price,
+          category: item.category,
+          recipe: item.recipe,
+          image: item.image
+        }
+      }
+      const result = await campCollection.updateOne(query, updatedDoc)
       res.send(result)
     })
 
