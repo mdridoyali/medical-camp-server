@@ -120,6 +120,19 @@ async function run() {
       res.send(result)
     })
 
+    app.get('/registered-camp/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { 'participant.email': email }
+      const result = await registeredCampCollection.find(query).toArray()
+      res.send(result)
+    })
+
+    app.delete('/registered-camp/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await registeredCampCollection.deleteOne(query)
+      res.send(result)
+    })
 
 
 
