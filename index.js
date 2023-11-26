@@ -35,6 +35,7 @@ async function run() {
 
     const campCollection = client.db("mediCampDB").collection("camps");
     const usersCollection = client.db("mediCampDB").collection("users");
+    const registeredCampCollection = client.db("mediCampDB").collection("registeredCamp");
 
 
     // user related api
@@ -52,12 +53,12 @@ async function run() {
     // check user roll
     app.get('/user/:email', async (req, res) => {
       const email = req.params.email
-      console.log(email)
       const query = { email: email }
       const result = await usersCollection.findOne(query);
       res.send(result)
-      console.log(result)
     })
+
+
 
 
     // camp related api
@@ -108,6 +109,18 @@ async function run() {
       const result = await campCollection.updateOne(query, updatedDoc, options)
       res.send(result)
     })
+
+
+
+
+    // Registered camp related api
+    app.post('/registered-camp', async (req, res) => {
+      const camp = req.body
+      const result = await registeredCampCollection.insertOne(camp);
+      res.send(result)
+    })
+
+
 
 
 
