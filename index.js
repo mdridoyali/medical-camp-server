@@ -36,7 +36,7 @@ async function run() {
     const campCollection = client.db("mediCampDB").collection("camps");
     const usersCollection = client.db("mediCampDB").collection("users");
     const registeredCampCollection = client.db("mediCampDB").collection("registeredCamp");
-    const paymentCollection = client.db("mediCampDB").collection("payments");
+    const paymentHistoryCollection = client.db("mediCampDB").collection("payments");
 
 
     // user related api
@@ -73,6 +73,12 @@ async function run() {
       const result = await campCollection.find().toArray();
       res.send(result)
     })
+    app.get('/all-camps/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {organizerEmail: email}
+      const result = await campCollection.find(query).toArray();
+      res.send(result)
+    })
 
     app.get('/camp/:id', async (req, res) => {
       const id = req.params.id;
@@ -87,6 +93,7 @@ async function run() {
       const result = await campCollection.deleteOne(query)
       res.send(result)
     })
+  
 
     app.put('/camp/:id', async (req, res) => {
       const id = req.params.id
@@ -114,34 +121,86 @@ async function run() {
 
 
 
+
+
     // Registered camp related api
     app.post('/registered-camp', async (req, res) => {
       const camp = req.body
       const result = await registeredCampCollection.insertOne(camp);
+      // console.log(result)
       res.send(result)
     })
 
+    // for participant
     app.get('/registered-camp/:email', async (req, res) => {
-      const email = req.params.email;
+      const email = req.params?.email;
       const query = { 'participant.email': email }
       const result = await registeredCampCollection.find(query).toArray()
       res.send(result)
     })
+    app.get('/registered-camp-organizer/:email', async (req, res) => {
+      const email = req.params?.email;
+      const query = { organizerEmail: email };
+      const result = await registeredCampCollection.find(query).toArray()
+      res.send(result)
+    })
+  
+    app.get('/payment-camp/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await registeredCampCollection.findOne(query)
+      res.send(result)
+    })
 
+    // for participant
     app.delete('/registered-camp/:id', async (req, res) => {
       const id = req.params.id;
+      console.log( 'delete', id)
       const query = { _id: new ObjectId(id) }
       const result = await registeredCampCollection.deleteOne(query)
       res.send(result)
     })
 
-    
+    // for organizer
+    app.delete('/registered-camp-organizer/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await registeredCampCollection.deleteOne(query)
+      res.send(result)
+    })
+  
 
+    app.patch('/payment/:id', async (req, res) => {
+      const id = req.params.id
+      const status = req.body
+      console.log(id)
+      const query = { _id: new ObjectId(id) }
+      const updatedDoc = {
+        $set: {
+          paymentStatus: status.paymentStatus,
+          confirmationStatus: status.confirmationStatus,
+        }
+      }
+      console.log(updatedDoc)
+      const result = await registeredCampCollection.updateOne(query, updatedDoc)
+      res.send(result)
+    })
+    
+    // payment intent
+    app.get('/payment-history/:email', async (req, res) => {
+      const query = { email: req.params.email }
+      // if (req.params.email !== req.decoded.email) {
+      //   return res.status(403).send({ message: 'forbidden access' })
+      // }
+      // console.log(query)
+      const result = await  paymentHistoryCollection.find(query).toArray();
+      res.send(result)
+    })
 
     app.post('/create-payment-intent', async (req, res) => {
       const { price } = req.body
       const amount = parseInt(price * 100);
-      console.log(amount, ' amount')
+      // console.log(amount, ' amount')
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: 'usd',
@@ -154,16 +213,16 @@ async function run() {
 
     app.post('/payments', async (req, res) => {
       const payment = req.body;
-      console.log(payment)
-      const paymentResult = await paymentCollection.insertOne(payment)
+      // console.log(payment)
+      const paymentResult = await  paymentHistoryCollection.insertOne(payment)
       // carefully delete ease item from the cart
-      const query = {
-        _id: {
-          $in: payment.cartIds.map(id => new ObjectId(id))
-        }
-      }
-      const deleteResult = await registeredCampCollection.deleteMany(query)
-      res.send({ paymentResult, deleteResult })
+      // const query = {
+      //   _id: {
+      //     $in: payment.cartIds.map(id => new ObjectId(id))
+      //   }
+      // }
+      // const deleteResult = await registeredCampCollection.deleteMany(query)
+      res.send({ paymentResult})
     })
 
 
