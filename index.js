@@ -36,6 +36,7 @@ async function run() {
     const campCollection = client.db("mediCampDB").collection("camps");
     const usersCollection = client.db("mediCampDB").collection("users");
     const registeredCampCollection = client.db("mediCampDB").collection("registeredCamp");
+    const paymentCollection = client.db("mediCampDB").collection("payments");
 
 
     // user related api
@@ -132,6 +133,37 @@ async function run() {
       const query = { _id: new ObjectId(id) }
       const result = await registeredCampCollection.deleteOne(query)
       res.send(result)
+    })
+
+    
+
+
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body
+      const amount = parseInt(price * 100);
+      console.log(amount, ' amount')
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      })
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      })
+    })
+
+    app.post('/payments', async (req, res) => {
+      const payment = req.body;
+      console.log(payment)
+      const paymentResult = await paymentCollection.insertOne(payment)
+      // carefully delete ease item from the cart
+      const query = {
+        _id: {
+          $in: payment.cartIds.map(id => new ObjectId(id))
+        }
+      }
+      const deleteResult = await registeredCampCollection.deleteMany(query)
+      res.send({ paymentResult, deleteResult })
     })
 
 
