@@ -51,7 +51,7 @@ async function run() {
       res.send(result)
     })
      
-    // check user roll
+    // check user role
     app.get('/user/:email', async (req, res) => {
       const email = req.params.email
       const query = { email: email }
@@ -152,6 +152,27 @@ async function run() {
       res.send(result)
     })
 
+     //review related API | give review for paid camp
+     app.patch('/review-update/:id', async (req, res) => {
+      const id = req.params.id
+      const status = req.body
+      console.log(id, status)
+      const query = { _id: new ObjectId(id) }
+      const updatedDoc = {
+        $set: {
+          paymentStatus: status.paymentStatus,
+          rating:status.rating,
+          reviewDetails:status.reviewDetails,
+          reviewerName:status.reviewerName,
+          reviewerImg:status.reviewerImg,
+        }
+      }
+      console.log(updatedDoc)
+      const result = await registeredCampCollection.updateOne(query, updatedDoc)
+      res.send(result)
+    })
+
+
     // for participant
     app.delete('/registered-camp/:id', async (req, res) => {
       const id = req.params.id;
@@ -170,6 +191,7 @@ async function run() {
     })
   
 
+    //payment related API | update payment status for registered camp
     app.patch('/payment/:id', async (req, res) => {
       const id = req.params.id
       const status = req.body
@@ -178,7 +200,7 @@ async function run() {
       const updatedDoc = {
         $set: {
           paymentStatus: status.paymentStatus,
-          confirmationStatus: status.confirmationStatus,
+          // confirmationStatus: status.confirmationStatus,
         }
       }
       console.log(updatedDoc)
