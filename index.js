@@ -131,6 +131,11 @@ async function run() {
       res.send(result)
     })
 
+    // for testimonials
+    app.get('/registered-camp-testimonials', async (req, res) => {
+      const result = await registeredCampCollection.find().toArray()
+      res.send(result)
+    })
     // for participant
     app.get('/registered-camp/:email', async (req, res) => {
       const email = req.params?.email;
@@ -138,6 +143,7 @@ async function run() {
       const result = await registeredCampCollection.find(query).toArray()
       res.send(result)
     })
+    // for organizer
     app.get('/registered-camp-organizer/:email', async (req, res) => {
       const email = req.params?.email;
       const query = { organizerEmail: email };
@@ -165,6 +171,7 @@ async function run() {
           reviewDetails:status.reviewDetails,
           reviewerName:status.reviewerName,
           reviewerImg:status.reviewerImg,
+          reviewTime: status.reviewTime,
         }
       }
       console.log(updatedDoc)
