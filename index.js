@@ -22,6 +22,33 @@ app.use(
 );
 app.use(express.json());
 
+// JWT related api
+app.post('/jwt', async (req, res) => {
+  const user = req.body
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' })
+  // console.log('email',user, token)
+  res.send({ token })
+})
+
+//middleware
+const verifyToken = (req, res, next) => {
+  if (!req.headers.authorization) {
+    return res.status(401).send({ message: 'unauthorize access' })
+  }
+  const token = req.headers.authorization.split(' ')[1]
+  // console.log('token',token)
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: 'unauthorize access' })
+    }
+    req.decoded = decoded
+    next()
+  })
+}
+
+
+
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.w9fev91.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -73,24 +100,22 @@ async function run() {
     })
 
 
-
-
     // camp related api
-    app.post('/add-a-camp', async (req, res) => {
+    app.post('/add-a-camp',verifyToken,  async (req, res) => {
       const camp = req.body
       const result = await campCollection.insertOne(camp);
       res.send(result)
     })
 
     // camp for available camp page
-    app.get('/all-camps', async (req, res) => {
+    app.get('/all-camps', verifyToken, async (req, res) => {
       const result = await campCollection.find().toArray();
       res.send(result)
     })
 
     // for home page
     app.get('/six-camps', async (req, res) => {
-      const result = await campCollection.find().limit(6).sort({count:-1}).toArray();
+      const result = await campCollection.find().limit(6).sort({ count: -1 }).toArray();
       res.send(result)
     })
 
@@ -170,14 +195,6 @@ async function run() {
       res.send(result)
     })
 
-    // for testimonials
-    // app.get('/registered-camp-testimonials', async (req, res) => {
-    //   const result = await registeredCampCollection.find().toArray()
-    //   res.send(result)
-    // })
-
-
-    
     // for participant
     app.get('/registered-camp/:email', async (req, res) => {
       const email = req.params?.email;
@@ -199,28 +216,6 @@ async function run() {
       const result = await registeredCampCollection.findOne(query)
       res.send(result)
     })
-
-    //review related API | give review for paid camp
-    // app.patch('/review-update/:id', async (req, res) => {
-    //   const id = req.params.id
-    //   const status = req.body
-    //   console.log(id, status)
-    //   const query = { _id: new ObjectId(id) }
-    //   const updatedDoc = {
-    //     $set: {
-    //       paymentStatus: status.paymentStatus,
-    //       rating: status.rating,
-    //       reviewDetails: status.reviewDetails,
-    //       reviewerName: status.reviewerName,
-    //       reviewerImg: status.reviewerImg,
-    //       reviewTime: status.reviewTime,
-    //     }
-    //   }
-    //   console.log(updatedDoc)
-    //   const result = await registeredCampCollection.updateOne(query, updatedDoc)
-    //   res.send(result)
-    // })
-
 
     // for participant
     app.delete('/registered-camp/:id', async (req, res) => {
@@ -249,6 +244,22 @@ async function run() {
       const updatedDoc = {
         $set: {
           paymentStatus: status.paymentStatus,
+          confirmationStatus: status.confirmationStatus,
+        }
+      }
+      console.log(updatedDoc)
+      const result = await registeredCampCollection.updateOne(query, updatedDoc)
+      res.send(result)
+    })
+
+    // TODO Payment history confirmation status update
+    app.patch('/payment-history/:id', async (req, res) => {
+      const id = req.params.id
+      const status = req.body
+      console.log(id)
+      const query = { _id: new ObjectId(id) }
+      const updatedDoc = {
+        $set: {
           confirmationStatus: status.confirmationStatus,
         }
       }
@@ -328,7 +339,17 @@ async function run() {
     })
 
 
-
+    // Feedback related api
+    app.post('/feedback', async (req, res) => {
+      const feedback = req.body;
+      console.log(feedback)
+      const result = await feedbackCollection.insertOne(feedback);
+      res.send(result)
+    })
+    app.get('/feedback', async (req, res) => {
+      const result = await feedbackCollection.find().toArray();
+      res.send(result)
+    })
 
 
 
