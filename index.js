@@ -49,6 +49,7 @@ async function run() {
     const registerUpcomingCampCollection = client.db("mediCampDB").collection("registeredUpcomingCamp");
     const paymentHistoryCollection = client.db("mediCampDB").collection("payments");
     const upcomingCampCollection = client.db("mediCampDB").collection("upcoming-camps");
+    const feedbackCollection = client.db("mediCampDB").collection("feedback");
 
 
     // user related api
@@ -62,7 +63,7 @@ async function run() {
       const result = await usersCollection.insertOne(user)
       res.send(result)
     })
-     
+
     // check user role
     app.get('/user/:email', async (req, res) => {
       const email = req.params.email
@@ -81,13 +82,23 @@ async function run() {
       res.send(result)
     })
 
+    // camp for available camp page
     app.get('/all-camps', async (req, res) => {
       const result = await campCollection.find().toArray();
       res.send(result)
     })
+
+    // for home page
+    app.get('/six-camps', async (req, res) => {
+      const result = await campCollection.find().limit(6).sort({count:-1}).toArray();
+      res.send(result)
+    })
+
+
+
     app.get('/all-camps/:email', async (req, res) => {
       const email = req.params.email;
-      const query = {organizerEmail: email}
+      const query = { organizerEmail: email }
       const result = await campCollection.find(query).toArray();
       res.send(result)
     })
@@ -105,7 +116,7 @@ async function run() {
       const result = await campCollection.deleteOne(query)
       res.send(result)
     })
-  
+
 
     app.put('/camp/:id', async (req, res) => {
       const id = req.params.id
@@ -131,7 +142,23 @@ async function run() {
     })
 
 
-
+    // update the registered count
+    app.patch('/camp-count/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id)
+      const existingCamp = await campCollection.findOne({ _id: new ObjectId(id) });
+      // const currentCount = existingCamp ? existingCamp.count : 0;
+      const currentCount = existingCamp && existingCamp.count !== undefined ? existingCamp.count : 0;
+      const query = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          count: currentCount + 1
+        }
+      };
+      const result = await campCollection.updateOne(query, updatedDoc, options);
+      res.send(result);
+    });
 
 
 
@@ -144,10 +171,13 @@ async function run() {
     })
 
     // for testimonials
-    app.get('/registered-camp-testimonials', async (req, res) => {
-      const result = await registeredCampCollection.find().toArray()
-      res.send(result)
-    })
+    // app.get('/registered-camp-testimonials', async (req, res) => {
+    //   const result = await registeredCampCollection.find().toArray()
+    //   res.send(result)
+    // })
+
+
+    
     // for participant
     app.get('/registered-camp/:email', async (req, res) => {
       const email = req.params?.email;
@@ -162,7 +192,7 @@ async function run() {
       const result = await registeredCampCollection.find(query).toArray()
       res.send(result)
     })
-  
+
     app.get('/payment-camp/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
@@ -170,32 +200,32 @@ async function run() {
       res.send(result)
     })
 
-     //review related API | give review for paid camp
-     app.patch('/review-update/:id', async (req, res) => {
-      const id = req.params.id
-      const status = req.body
-      console.log(id, status)
-      const query = { _id: new ObjectId(id) }
-      const updatedDoc = {
-        $set: {
-          paymentStatus: status.paymentStatus,
-          rating:status.rating,
-          reviewDetails:status.reviewDetails,
-          reviewerName:status.reviewerName,
-          reviewerImg:status.reviewerImg,
-          reviewTime: status.reviewTime,
-        }
-      }
-      console.log(updatedDoc)
-      const result = await registeredCampCollection.updateOne(query, updatedDoc)
-      res.send(result)
-    })
+    //review related API | give review for paid camp
+    // app.patch('/review-update/:id', async (req, res) => {
+    //   const id = req.params.id
+    //   const status = req.body
+    //   console.log(id, status)
+    //   const query = { _id: new ObjectId(id) }
+    //   const updatedDoc = {
+    //     $set: {
+    //       paymentStatus: status.paymentStatus,
+    //       rating: status.rating,
+    //       reviewDetails: status.reviewDetails,
+    //       reviewerName: status.reviewerName,
+    //       reviewerImg: status.reviewerImg,
+    //       reviewTime: status.reviewTime,
+    //     }
+    //   }
+    //   console.log(updatedDoc)
+    //   const result = await registeredCampCollection.updateOne(query, updatedDoc)
+    //   res.send(result)
+    // })
 
 
     // for participant
     app.delete('/registered-camp/:id', async (req, res) => {
       const id = req.params.id;
-      console.log( 'delete', id)
+      console.log('delete', id)
       const query = { _id: new ObjectId(id) }
       const result = await registeredCampCollection.deleteOne(query)
       res.send(result)
@@ -208,7 +238,7 @@ async function run() {
       const result = await registeredCampCollection.deleteOne(query)
       res.send(result)
     })
-  
+
 
     //payment related API | update payment status for registered camp
     app.patch('/payment/:id', async (req, res) => {
@@ -226,7 +256,7 @@ async function run() {
       const result = await registeredCampCollection.updateOne(query, updatedDoc)
       res.send(result)
     })
-    
+
     // payment intent
     app.get('/payment-history/:email', async (req, res) => {
       const query = { email: req.params.email }
@@ -234,7 +264,7 @@ async function run() {
       //   return res.status(403).send({ message: 'forbidden access' })
       // }
       // console.log(query)
-      const result = await  paymentHistoryCollection.find(query).toArray();
+      const result = await paymentHistoryCollection.find(query).toArray();
       res.send(result)
     })
 
@@ -255,7 +285,7 @@ async function run() {
     app.post('/payments', async (req, res) => {
       const payment = req.body;
       // console.log(payment)
-      const paymentResult = await  paymentHistoryCollection.insertOne(payment)
+      const paymentResult = await paymentHistoryCollection.insertOne(payment)
       // carefully delete ease item from the cart
       // const query = {
       //   _id: {
@@ -263,7 +293,7 @@ async function run() {
       //   }
       // }
       // const deleteResult = await registeredCampCollection.deleteMany(query)
-      res.send({ paymentResult})
+      res.send({ paymentResult })
     })
 
 
@@ -277,14 +307,14 @@ async function run() {
       res.send(result)
     })
 
-     // register upcoming camp related api
+    // register upcoming camp related api
     app.post('/registered-upcoming-camp', async (req, res) => {
       const camp = req.body
       console.log(camp)
       const result = await registerUpcomingCampCollection.insertOne(camp);
       res.send(result)
     })
-   
+
     app.get('/upcoming-camp', async (req, res) => {
       const result = await upcomingCampCollection.find().toArray();
       res.send(result)
@@ -292,11 +322,11 @@ async function run() {
     // for upcoming camp details
     app.get('/upcoming-camp/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const result = await upcomingCampCollection.findOne(query);
       res.send(result)
     })
-   
+
 
 
 
