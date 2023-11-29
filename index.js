@@ -46,6 +46,7 @@ async function run() {
     const campCollection = client.db("mediCampDB").collection("camps");
     const usersCollection = client.db("mediCampDB").collection("users");
     const registeredCampCollection = client.db("mediCampDB").collection("registeredCamp");
+    const registerUpcomingCampCollection = client.db("mediCampDB").collection("registeredUpcomingCamp");
     const paymentHistoryCollection = client.db("mediCampDB").collection("payments");
     const upcomingCampCollection = client.db("mediCampDB").collection("upcoming-camps");
 
@@ -218,7 +219,7 @@ async function run() {
       const updatedDoc = {
         $set: {
           paymentStatus: status.paymentStatus,
-          // confirmationStatus: status.confirmationStatus,
+          confirmationStatus: status.confirmationStatus,
         }
       }
       console.log(updatedDoc)
@@ -271,13 +272,28 @@ async function run() {
 
     app.post('/upcoming-camp', async (req, res) => {
       const camp = req.body
-      console.log(camp)
+      // console.log(camp)
       const result = await upcomingCampCollection.insertOne(camp);
+      res.send(result)
+    })
+
+     // register upcoming camp related api
+    app.post('/registered-upcoming-camp', async (req, res) => {
+      const camp = req.body
+      console.log(camp)
+      const result = await registerUpcomingCampCollection.insertOne(camp);
       res.send(result)
     })
    
     app.get('/upcoming-camp', async (req, res) => {
       const result = await upcomingCampCollection.find().toArray();
+      res.send(result)
+    })
+    // for upcoming camp details
+    app.get('/upcoming-camp/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await upcomingCampCollection.findOne(query);
       res.send(result)
     })
    
