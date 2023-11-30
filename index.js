@@ -57,6 +57,7 @@ async function run() {
     const usersCollection = client.db("mediCampDB").collection("users");
     const registeredCampCollection = client.db("mediCampDB").collection("registeredCamp");
     const registerUpcomingCampCollection = client.db("mediCampDB").collection("registeredUpcomingCamp");
+    const interestUpcomingCampCollection = client.db("mediCampDB").collection("interestedUpcomingCamp");
     const paymentHistoryCollection = client.db("mediCampDB").collection("payments");
     const upcomingCampCollection = client.db("mediCampDB").collection("upcoming-camps");
     const feedbackCollection = client.db("mediCampDB").collection("feedback");
@@ -266,14 +267,14 @@ async function run() {
       res.send(result)
     })
     // for organizer
-    app.get('/registered-camp-organizer/:email', verifyToken,  async (req, res) => {
+    app.get('/registered-camp-organizer/:email', verifyToken, async (req, res) => {
       const email = req.params?.email;
       const query = { organizerEmail: email };
       const result = await registeredCampCollection.find(query).toArray()
       res.send(result)
     })
 
-    app.get('/payment-camp/:id',verifyToken, async (req, res) => {
+    app.get('/payment-camp/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await registeredCampCollection.findOne(query)
@@ -281,7 +282,7 @@ async function run() {
     })
 
     // for participant
-    app.delete('/registered-camp/:id',verifyToken, async (req, res) => {
+    app.delete('/registered-camp/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       console.log('delete', id)
       const query = { _id: new ObjectId(id) }
@@ -290,7 +291,7 @@ async function run() {
     })
 
     // for organizer
-    app.delete('/registered-camp-organizer/:id',verifyToken, async (req, res) => {
+    app.delete('/registered-camp-organizer/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await registeredCampCollection.deleteOne(query)
@@ -299,7 +300,7 @@ async function run() {
 
 
     //payment related API | update payment status for registered camp
-    app.patch('/payment/:id',verifyToken, async (req, res) => {
+    app.patch('/payment/:id', verifyToken, async (req, res) => {
       const id = req.params.id
       const status = req.body
       const query = { _id: new ObjectId(id) }
@@ -314,7 +315,7 @@ async function run() {
     })
 
     // TODO Payment history confirmation status update
-    app.patch('/payment-history/:id',verifyToken, verifyParticipant, async (req, res) => {
+    app.patch('/payment-history/:id', verifyToken, verifyParticipant, async (req, res) => {
       const id = req.params.id
       const status = req.body
       console.log(id)
@@ -330,7 +331,7 @@ async function run() {
     })
 
     // payment intent
-    app.get('/payment-history/:email',verifyToken, async (req, res) => {
+    app.get('/payment-history/:email', verifyToken, async (req, res) => {
       const query = { email: req.params.email }
       // if (req.params.email !== req.decoded.email) {
       //   return res.status(403).send({ message: 'forbidden access' })
@@ -340,7 +341,7 @@ async function run() {
       res.send(result)
     })
 
-    app.post('/create-payment-intent',verifyToken, async (req, res) => {
+    app.post('/create-payment-intent', verifyToken, async (req, res) => {
       const { price } = req.body
       const amount = parseInt(price * 100);
       // console.log(amount, ' amount')
@@ -354,7 +355,7 @@ async function run() {
       })
     })
 
-    app.post('/payments',verifyToken, async (req, res) => {
+    app.post('/payments', verifyToken, async (req, res) => {
       const payment = req.body;
       // console.log(payment)
       const paymentResult = await paymentHistoryCollection.insertOne(payment)
@@ -372,20 +373,36 @@ async function run() {
 
     // add upcoming camp related api
 
-    app.post('/upcoming-camp',verifyToken, async (req, res) => {
+    app.post('/upcoming-camp', verifyToken, async (req, res) => {
       const camp = req.body
       // console.log(camp)
       const result = await upcomingCampCollection.insertOne(camp);
       res.send(result)
     })
 
-    // register upcoming camp related api
+    // register upcoming camp for participant related api
     app.post('/registered-upcoming-camp', async (req, res) => {
       const camp = req.body
       console.log(camp)
       const result = await registerUpcomingCampCollection.insertOne(camp);
       res.send(result)
     })
+
+    // interest upcoming camp for professional
+    app.post('/interested-camp', verifyProfessional, async (req, res) => {
+      const camp = req.body
+      console.log(camp)
+      const result = await interestUpcomingCampCollection.insertOne(camp);
+      res.send(result)
+    })
+
+    app.get('/interested-camp/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email }
+      const result = await interestUpcomingCampCollection.find(query).toArray()
+      res.send(result)
+    })
+
 
     app.get('/upcoming-camp', async (req, res) => {
       const result = await upcomingCampCollection.find().toArray();
@@ -400,8 +417,10 @@ async function run() {
     })
 
 
+
+
     // Feedback related api
-    app.post('/feedback',verifyToken, async (req, res) => {
+    app.post('/feedback', verifyToken, async (req, res) => {
       const feedback = req.body;
       console.log(feedback)
       const result = await feedbackCollection.insertOne(feedback);
