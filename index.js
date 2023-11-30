@@ -99,9 +99,31 @@ async function run() {
       res.send(result)
     })
 
+    app.put('/update-user-profile/:email', verifyToken,  async (req, res) => {
+      const data = req.body;
+      const email = req.params.email;
+      const query = { email: email }
+      console.log(data, email)
+      const options = { upsert: true }
+      const updateDoc = {
+        $set: {
+          name: data.name,
+          profession: data.profession,
+          address: data.address,
+          mobile: data.mobile,
+          userImg: data.userImg,
+        }
+      }
+      const result = await usersCollection.updateOne(query, updateDoc, options)
+      res.send(result)
+    })
+
+
+
+
 
     // camp related api
-    app.post('/add-a-camp',verifyToken,  async (req, res) => {
+    app.post('/add-a-camp', verifyToken, async (req, res) => {
       const camp = req.body
       const result = await campCollection.insertOne(camp);
       res.send(result)
@@ -116,6 +138,11 @@ async function run() {
     // for home page
     app.get('/six-camps', async (req, res) => {
       const result = await campCollection.find().limit(6).sort({ count: -1 }).toArray();
+      res.send(result)
+    })
+    // for organizer page
+    app.get('/three-camps', async (req, res) => {
+      const result = await campCollection.find().limit(3).sort({ count: -1 }).toArray();
       res.send(result)
     })
 
@@ -239,7 +266,6 @@ async function run() {
     app.patch('/payment/:id', async (req, res) => {
       const id = req.params.id
       const status = req.body
-      console.log(id)
       const query = { _id: new ObjectId(id) }
       const updatedDoc = {
         $set: {
@@ -247,7 +273,6 @@ async function run() {
           confirmationStatus: status.confirmationStatus,
         }
       }
-      console.log(updatedDoc)
       const result = await registeredCampCollection.updateOne(query, updatedDoc)
       res.send(result)
     })
